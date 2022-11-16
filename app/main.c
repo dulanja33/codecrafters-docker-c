@@ -24,7 +24,11 @@ int main(int argc, char *argv[]) {
 	     execv(command, &argv[3]);
 	 } else {
 	 	   // We're in parent
-	 	   wait(NULL);
+	 	    int status;
+	 	    waitpid(child_pid, &status, 0);
+            if (WIFEXITED(status)){
+                return WEXITSTATUS(status);
+            }
 	 	  // printf("Child terminated");
 	 }
 
