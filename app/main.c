@@ -49,11 +49,10 @@ void copy_files(char *from_path, char *to_path){
   	close(to);
 }
 
-void createDirContainer(char *command){
-      char temp_dir_path[] = "/tmp/mydocker";
+void createDirContainer(char *command, char *temp_dir_path){
       char command_path[4096];
-      int n = mkdir(temp_dir_path, 0777);
-      if(n < 0) {
+      char *n = mkdtemp(temp_dir_path);
+      if(n == NULL) {
           printf("Cannot create temp directory.\n");
           exit(1);
       }
@@ -82,8 +81,8 @@ int main(int argc, char *argv[]) {
 
 	 if (child_pid == 0) {
 	 	   // Replace current program with calling program
-	 	 char temp_dir_path[] = "/tmp/mydocker";
-	 	 createDirContainer(command);
+	 	 char temp_dir_path[] = "/tmp/container_XXXXXX";
+	 	 createDirContainer(command, temp_dir_path);
 
 	 	 if(chroot(temp_dir_path) != 0) {
             perror("chroot");
