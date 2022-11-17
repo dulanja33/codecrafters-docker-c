@@ -20,49 +20,40 @@ void mk_dir(char *temp_dir_path, char *command_path){
 	}
 }
 
-void copy_files(char *from, char *to){
-    int src_fd, dst_fd, out ,in;
-    unsigned char buffer[4096];
+void copy_files(char *from_path, char *to_path){
+  	int  from;
+  	int  to;
+  	char buffer[4096];
+  	int  ret;
 
+  	from = open(from_path, O_RDONLY);
+  	if (from < 0){
+  	    perror("error open from path");
+  		exit(1);
+  	}
 
-    src_fd = open(from, O_RDONLY);
-    dst_fd = open(to, O_CREAT | O_WRONLY);
+  	to = open(to_path, O_WRONLY | O_CREAT | O_EXCL, 0777);
+  	if (to < 0){
+  	    perror("error open to path");
+  		exit(1);
+  	}
 
-    if(src_fd < 0 || dst_fd < 0){
-        printf("Error opening file.\n");
-        perror("open");
-        exit(1);
-    }
+  	while ((ret = read(from, buffer, 4096)) > 0){
+  		if (ret < 0 || write(to, buffer, ret) < 0){
+  		    perror("error write");
+  	        exit(1);
+  		}
+  	}
 
-
-    while(1){
-        in = read(src_fd, buffer, 4096);
-        if(in == -1){
-            printf("Error reading file.\n");
-            perror("read");
-            exit(1);
-        }
-
-        if(in == 0) break;
-
-        out = write(dst_fd, buffer, in);
-
-        if (out == -1) {
-           printf("Error writing to file.\n");
-           perror("write");
-           exit(1);
-        }
-    }
-
-    close(src_fd);
-    close(dst_fd);
+  	close(from);
+  	close(to);
 }
 
 void createDirContainer(char *command){
-      char temp_dir_path[] = "/tmp/tmpdir.XXXXXX";
+      char temp_dir_path[] = "/tmp/mydocker";
       char command_path[4096];
-      char *temp_dir = mkdtemp(temp_dir_path);
-      if(temp_dir == NULL) {
+      int n = mkdir(temp_dir_path, 0777);
+      if(n < 0) {
           printf("Cannot create temp directory.\n");
           exit(1);
       }
@@ -70,7 +61,6 @@ void createDirContainer(char *command){
       sprintf(command_path, "%s%s", temp_dir_path, command);
       mk_dir(temp_dir_path, command_path);
       copy_files(command, command_path);
-      chroot(temp_dir_path);
 }
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
@@ -92,8 +82,16 @@ int main(int argc, char *argv[]) {
 
 	 if (child_pid == 0) {
 	 	   // Replace current program with calling program
+	 	 char temp_dir_path[] = "/tmp/mydocker";
 	 	 createDirContainer(command);
+
+	 	 if(chroot(temp_dir_path) != 0) {
+            perror("chroot");
+            exit(1);
+         }
+
 	     execv(command, &argv[3]);
+	     perror("ERR: execv");
 	 } else {
 	 	   // We're in parent
 	 	    int status;
