@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <sched.h>
 #include <stdio.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -73,6 +75,7 @@ int main(int argc, char *argv[]) {
 	// Uncomment this block to pass the first stage
 
 	 char *command = argv[3];
+	 unshare(CLONE_NEWPID);
 	 int child_pid = fork();
 	 if (child_pid == -1) {
 	     printf("Error forking!");
